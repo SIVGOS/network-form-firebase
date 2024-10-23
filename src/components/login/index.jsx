@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {signInWithEmailAndPassword, signOut} from 'firebase/auth';
 import {auth} from '../../firebase'
 import { Box, TextField, Button, Typography } from '@mui/material';
+import { Navigate, redirect } from 'react-router-dom';
 
 function SignIn() {
   const [email, setEmail] = useState('');
@@ -11,8 +12,10 @@ function SignIn() {
   const handleSignIn = async (e) => {
     e.preventDefault();
     try {
-      const user = await signInWithEmailAndPassword(auth, email, password);
-      console.log('Signed in successfully:', user);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      localStorage.setItem('user_id', user.uid);
+      localStorage.setItem('user_email', user.email);
     } catch (error) {
       setError(error.message);
     }
@@ -50,7 +53,17 @@ function SignIn() {
 }
 
 export function handleSignOut() {
-  signOut(auth);
+  console.log('logout');
+  localStorage.removeItem('user_id');
+  localStorage.removeItem('user_email');
+  signOut(auth)
+    .then(() => {
+      console.log('User signed out successfully');
+    })
+    .catch((error) => {
+      console.error('Error signing out: ', error);
+    });
 }
+
 
 export default SignIn;

@@ -1,26 +1,28 @@
+// FormResponse.js
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-import { addDoc } from 'firebase/firestore';
-import { responseCollection } from '../../firebase'; // Firebase configuration file
+import { useLocation, useNavigate } from 'react-router-dom';
+import { addDoc, serverTimestamp, setDoc, doc } from 'firebase/firestore';
+import { responseCollection } from '../../firebase';
 import { Container, Box, Typography, TextField, Button } from '@mui/material';
-import useAuth from '../../contextx/auth';
 
 const FormResponse = () => {
   const location = useLocation();
-  const { form } = location.state || {};
-  const [responses, setResponses] = useState({});
-  const user = useAuth();
+  const { form, responses: initialResponses } = location.state || {};
+  const [responses, setResponses] = useState(initialResponses || {});
+  const user_id = localStorage.getItem('user_id');
+  const user_email = localStorage.getItem('user_email');
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (form) {
-      const initialResponses = {};
       const formFields = JSON.parse(form.schema);
-      formFields.forEach(field => {
-        initialResponses[field.label] = '';
-      });
-      setResponses(initialResponses);
+      const filledResponses = formFields.reduce((acc, field) => {
+        acc[field.label] = initialResponses ? initialResponses[field.label] : '';
+        return acc;
+      }, {});
+      setResponses(filledResponses);
     }
-  }, [form]);
+  }, [form, initialResponses]);
 
   const handleChange = (label, value) => {
     setResponses({
@@ -31,19 +33,27 @@ const FormResponse = () => {
 
   const handleSubmit = async () => {
     const response = {
-      userId: user.uid,
-      userEmail: user.email,
+      userId: user_id,
+      userEmail: user_email,
       formId: form.id,
       formName: form.name,
+      modifiedOn: serverTimestamp(),
       responses,
     };
 
     try {
-      await addDoc(responseCollection, response);
-      alert('Response submitted successfully');
+      if (initialResponses) {
+        await setDoc(doc(responseCollection, initialResponses.id), response);
+        alert('Response updated successfully');
+      } else {
+        await addDoc(responseCollection, response);
+        alert('Response submitted successfully');
+      }
     } catch (error) {
       console.log('Error submitting response: ', error);
     }
+
+    navigate('/response-list')
   };
 
   return (
@@ -57,9 +67,13 @@ const FormResponse = () => {
             key={index}
             fullWidth
             label={field.label}
+            type={field.type}
             value={responses[field.label] || ''}
             onChange={(e) => handleChange(field.label, e.target.value)}
             margin="normal"
+            InputLabelProps={{
+              shrink: true
+            }}
           />
         ))}
         <Button variant="contained" color="primary" onClick={handleSubmit} sx={{ mt: 2 }}>
