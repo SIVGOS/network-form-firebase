@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { formCollection } from "../../firebase";
@@ -17,6 +17,7 @@ const FormBuilder = () => {
   const [options, setOptions] = useState([]);
   const [newOption, setNewOption] = useState('');
   const [additionalOption, setAdditionalOption] = useState('');
+  const inputRefs = useRef({});
   const user_id = localStorage.getItem('user_id');
   const multiOptionFields = ['checkbox', 'radio', 'select']
 
@@ -87,6 +88,13 @@ const FormBuilder = () => {
   const handleRemoveOption = (index) => {
     setOptions((prevOptions) => prevOptions.filter((_, i) => i !== index));
   };
+
+  const registerRef = (id, element) => {
+    if (element) {
+      inputRefs.current[id] = element;
+    }
+  };
+
 
   return (
     <Container maxWidth="sm">
@@ -165,7 +173,7 @@ const FormBuilder = () => {
                     <TextField
                       fullWidth
                       label="Add Option"
-                      value={additionalOption}
+                      inputRef={(element) => registerRef(`add_opt_${index}`, element)}
                       onChange={(e) => setAdditionalOption(e.target.value)}
                       margin="normal"
                     />
@@ -175,6 +183,7 @@ const FormBuilder = () => {
                         newFields[index].options.push(additionalOption);
                         setFormFields(newFields);
                         setAdditionalOption('');
+                        inputRefs.current[`add_opt_${index}`].value='';
                       }
                     }} sx={{ ml: 2 }}>
                       Add
