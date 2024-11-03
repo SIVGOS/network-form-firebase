@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Box, Button, Container, List, ListItem, ListItemText, Typography, TextField } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getDocs, deleteDoc, doc, query, where } from 'firebase/firestore';
-import { formCollection } from '../../firebase';
+import { formCollection, responseCollection } from '../../firebase';
 
 const FormList = () => {
   const [forms, setForms] = useState([]);
@@ -40,11 +40,23 @@ const FormList = () => {
     }
   };
 
+  
+  const deleteResponses = async(formId) => {
+    const responses = query(
+      responseCollection,
+      where('formId', '==', formId)
+    );
+    await responses.map(resp => {
+      deleteDoc(doc(responseCollection, resp.id))
+    });
+  }
+  
   const handleDeleteForm = async (formId) => {
     const isConfirmed = window.confirm("Are you sure you want to delete this form? This action cannot be undone.");
   
     if (isConfirmed) {
       try {
+        await deleteResponses(formId);
         await deleteDoc(doc(formCollection, formId));
         setForms(forms.filter(form => form.id !== formId));
       } catch (error) {
