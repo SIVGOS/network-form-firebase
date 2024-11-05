@@ -95,6 +95,23 @@ const FormBuilder = () => {
     }
   };
 
+  const handleMoveField = (index, direction) => {
+    setFormFields(prevFields => {
+          const newFields = [...prevFields];
+          if (direction === 'up') {
+              if (index === 0) {
+                  return newFields;
+              }
+              [newFields[index], newFields[index - 1]] = [newFields[index - 1], newFields[index]];
+          } else if (direction === 'down') {
+              if (index === newFields.length - 1) {
+                  return newFields;
+              }
+              [newFields[index], newFields[index + 1]] = [newFields[index + 1], newFields[index]];
+          }
+          return newFields;
+      });
+  };
 
   return (
     <Container maxWidth="sm">
@@ -117,7 +134,7 @@ const FormBuilder = () => {
             <Box key={index} sx={{ mb: 2 }}>
               <TextField
                 fullWidth
-                label="Field Name"
+                label={`Field ${index+1}`}
                 value={field.label}
                 onChange={(e) => {
                   const newFields = [...formFields];
@@ -194,6 +211,14 @@ const FormBuilder = () => {
               <Button variant="contained" color="error" onClick={()=>handleRemoveField(index)} sx={{ mt: 2 }}>
                 Remove Field
               </Button>
+              {(index>0) && (
+              <Button variant="contained" color="primary" onClick={()=>handleMoveField(index, 'up')} sx={{ mt: 2, ml: 2}}>
+                Move Up
+              </Button>)}
+              {(index<formFields.length-1) && (
+              <Button variant="contained" color="primary" onClick={()=>handleMoveField(index, 'down')} sx={{ mt: 2, ml: 2 }}>
+                Move Down
+              </Button>)}
           </Box>
           ))}
         </Box>
