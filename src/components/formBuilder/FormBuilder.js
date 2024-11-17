@@ -3,7 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { formCollection } from "../../firebase";
 import inputTypes from './inputTypes.json';
-import { TextField, Button, IconButton, Select, MenuItem, FormControl, InputLabel, Box, Container, Typography } from '@mui/material';
+import { TextField, Button, IconButton, Select, MenuItem, FormControl, FormControlLabel, Checkbox,
+        InputLabel, Box, Container, Typography } from '@mui/material';
 import { Delete as DeleteIcon } from '@mui/icons-material';
 
 const FormBuilder = () => {
@@ -14,12 +15,13 @@ const FormBuilder = () => {
   const [formFields, setFormFields] = useState(form ? JSON.parse(form.schema) : []);
   const [fieldName, setFieldName] = useState('');
   const [fieldType, setFieldType] = useState('text');
+  const [requiredField, setRequiredField] = useState(true);
   const [options, setOptions] = useState([]);
   const [newOption, setNewOption] = useState('');
   const [additionalOption, setAdditionalOption] = useState('');
   const inputRefs = useRef({});
   const user_id = localStorage.getItem('user_id');
-  const multiOptionFields = ['checkbox', 'radio', 'select']
+  const multiOptionFields = ['checkbox', 'radio', 'select', 'dropdown']
 
   useEffect(() => {
     if (form) {
@@ -38,10 +40,12 @@ const FormBuilder = () => {
       const newField = {
         type: fieldType,
         label: fieldName,
+        required: requiredField,
         options: multiOptionFields.includes(fieldType) ? options : undefined
       };
       setFormFields((prevFields) => [...prevFields, newField]);
       setFieldName('');
+      setRequiredField(true);
       setFieldType('text'); // Reset to default field type
       setOptions([]); // Reset options
     }
@@ -208,6 +212,23 @@ const FormBuilder = () => {
                   </Box>
                 </Box>
               )}
+              <Box>
+              <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={field.required?true:false}
+                      onChange={(e) => {
+                        const newFields = [...formFields];
+                        newFields[index].required = e.target.checked;
+                        setFormFields(newFields);
+                      }}
+                      name="singleCheckbox"
+                      color="primary"
+                    />
+                  }
+                  label="Required Field"
+              />
+              </Box>
               <Button variant="contained" color="error" onClick={()=>handleRemoveField(index)} sx={{ mt: 2 }}>
                 Remove Field
               </Button>
@@ -279,6 +300,19 @@ const FormBuilder = () => {
             </Box>
           </Box>
         )}
+        <Box>
+        <FormControlLabel sx= {{ mt: 2 }}
+          control={
+            <Checkbox
+              checked={requiredField?true:false}
+              onChange={e=>setRequiredField(e.target.checked)}
+              name="singleCheckbox"
+              color="primary"
+            />
+          }
+          label="Required Field"
+          />
+        </Box>
         <Button variant="contained" color="primary" onClick={handleAddField} sx={{ mt: 2 }}>
           Add Field
         </Button>

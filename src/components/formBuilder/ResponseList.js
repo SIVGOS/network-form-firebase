@@ -10,7 +10,6 @@ import {
   TableRow,
   Paper,
   Typography,
-  Box,
   Button
 } from '@mui/material';
 import { getDocs, query, where, orderBy, deleteDoc, getDoc, doc } from 'firebase/firestore';
@@ -53,7 +52,7 @@ const FormResponseList = () => {
     try {
       const formDoc = await getDoc(doc(formCollection, resp.formId));
       const form = { id: formDoc.id, ...formDoc.data() };
-      navigate('/form-response', { state: { form, responses: resp.responses } });
+      navigate('/form-response', { state: { form, responses: {...resp.responses, id: resp.id} } });
     } catch (error) {
       console.error("Error fetching form: ", error);
     }

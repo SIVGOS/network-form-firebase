@@ -7,9 +7,8 @@
       { "id": "", "value": "date", "label": "Date" },
       { "id": "", "value": "textarea", "label": "Textarea", "rows":"10", "cols":"30" },
       { "id": "", "value": "checkbox", "label": "Checkbox" },
-      { "id": "", "value": "button", "label": "Button" },
       { "id": "", "value": "radio", "label": "Radio" },
-      { "id": "", "value": "select", "label": "Select", "options":["apple","orange","banana"] }
+      { "id": "", "value": "dropdown", "label": "Dropdown" }
     ]
 }
   
