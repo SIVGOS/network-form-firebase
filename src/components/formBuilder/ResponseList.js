@@ -1,99 +1,173 @@
-// ResponseList.js
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Typography,
-  Button
-} from '@mui/material';
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, Button,
+  TextField, TableSortLabel, TablePagination} from '@mui/material';
 import { getDocs, query, where, orderBy, deleteDoc, getDoc, doc } from 'firebase/firestore';
 import { formCollection, responseCollection } from '../../firebase';
 
 const FormResponseList = () => {
   const user_id = localStorage.getItem('user_id');
   const [formResponses, setFormResponses] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [order, setOrder] = useState('asc');
+  const [orderByColumn, setOrderByColumn] = useState('formName');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
   const navigate = useNavigate();
-  
+
   useEffect(() => {
     fetchResponses();
   }, []);
-  
+
   const fetchResponses = () => {
     console.log('Fetching responses...')
     const filteredCollection = query(
-        responseCollection,
-        where('userId', '==', user_id),
-        orderBy('modifiedOn', 'desc')
-      );
-    getDocs(filteredCollection).
-        then((responses) => {
-            console.log(responses);
-            const responseList = [];
-            if(typeof(responses)!='undefined'){
-                responses.forEach((doc)=>{
-                  responseList.push({...doc.data(), id:doc.id})
-              });
-            }
-            setFormResponses(responseList);
+      responseCollection,
+      where('userId', '==', user_id),
+      orderBy('modifiedOn', 'desc')
+    );
+    getDocs(filteredCollection)
+      .then((responses) => {
+        const responseList = [];
+        if (typeof responses !== 'undefined') {
+          responses.forEach((doc) => {
+            responseList.push({ ...doc.data(), id: doc.id });
+          });
         }
-        ).catch((error)=>{
-            console.log(error)
-        }
-        )
+        setFormResponses(responseList);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
   };
 
   const handleEditResponse = async (resp) => {
     try {
       const formDoc = await getDoc(doc(formCollection, resp.formId));
       const form = { id: formDoc.id, ...formDoc.data() };
-      navigate('/form-response', { state: { form, responses: {...resp.responses, id: resp.id} } });
+      navigate('/form-response', { state: { form, responses: { ...resp.responses, id: resp.id, responseLabel: resp.responseLabel } } });
     } catch (error) {
       console.error("Error fetching form: ", error);
     }
-  }
+  };
 
   const handleDeleteResponse = async (respId) => {
     const isConfirmed = window.confirm("Are you sure you want to delete this response? This action cannot be undone.");
-    if(isConfirmed){
-      try{
-        await deleteDoc(responseCollection, respId);
-        setFormResponses(formResponses.filter((resp)=>resp.id !== respId));
-      }catch (error){
+    if (isConfirmed) {
+      try {
+        await deleteDoc(doc(responseCollection, respId));
+        setFormResponses(formResponses.filter((resp) => resp.id !== respId));
+      } catch (error) {
         console.log('Error in deleting response:', error);
       }
-    }
-    else{
+    } else {
       console.log("Response deletion canceled.");
     }
   };
 
+  const handleSearchChange = (event) => {
+    setSearchTerm(event.target.value);
+  };
+
+  const handleSortRequest = (property) => {
+    const isAsc = orderByColumn === property && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setOrderByColumn(property);
+  };
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const sortedResponses = formResponses.sort((a, b) => {
+    if (a[orderByColumn] < b[orderByColumn]) {
+      return order === 'asc' ? -1 : 1;
+    }
+    if (a[orderByColumn] > b[orderByColumn]) {
+      return order === 'asc' ? 1 : -1;
+    }
+    return 0;
+  });
+
+  const filteredResponses = sortedResponses.filter((response) =>
+    (response.formName.toLowerCase().includes(searchTerm.toLowerCase())) || 
+    (response.responseLabel.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (response.userEmail.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  const paginatedResponses = filteredResponses.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+
   return (
-    <TableContainer component={Paper}>
+    <Paper>
       <Typography variant="h6" component="div" gutterBottom style={{ padding: '16px' }}>
         Form Responses
       </Typography>
-      <Table aria-label="form response table">
-        <TableHead>
-          <TableRow>
-            <TableCell>Form Name</TableCell>
-            <TableCell>Filled By</TableCell>
-            <TableCell>Filled On</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {formResponses.map((row, index) => (
-            <TableRow key={index}>
-              <TableCell>{row.formName}</TableCell>
-              <TableCell>{row.userEmail}</TableCell>
-              <TableCell>{new Date(row.modifiedOn.toDate()).toLocaleString()}</TableCell>
+      <TextField
+        label="Search"
+        variant="outlined"
+        fullWidth
+        margin="normal"
+        value={searchTerm}
+        onChange={handleSearchChange}
+      />
+      <TableContainer>
+        <Table aria-label="form response table">
+          <TableHead>
+            <TableRow>
               <TableCell>
-                <Button
+                <TableSortLabel
+                  active={orderByColumn === 'formName'}
+                  direction={orderByColumn === 'formName' ? order : 'asc'}
+                  onClick={() => handleSortRequest('formName')}
+                >
+                  Form Name
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderByColumn === 'responseLabel'}
+                  direction={orderByColumn === 'responseLabel' ? order : 'asc'}
+                  onClick={() => handleSortRequest('responseLabel')}
+                >
+                  Response Label
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderByColumn === 'userEmail'}
+                  direction={orderByColumn === 'userEmail' ? order : 'asc'}
+                  onClick={() => handleSortRequest('userEmail')}
+                >
+                  Filled By
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderByColumn === 'modifiedOn'}
+                  direction={orderByColumn === 'modifiedOn' ? order : 'asc'}
+                  onClick={() => handleSortRequest('modifiedOn')}
+                >
+                  Filled On
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {paginatedResponses.map((row, index) => (
+              <TableRow key={index}>
+                <TableCell>{row.formName}</TableCell>
+                <TableCell>{row.responseLabel || 'Unnamed response'}</TableCell>
+                <TableCell>{row.userEmail}</TableCell>
+                <TableCell>{new Date(row.modifiedOn.toDate()).toLocaleString()}</TableCell>
+                <TableCell>
+                  <Button
                     variant="contained"
                     color="primary"
                     onClick={() => handleEditResponse(row)}
@@ -107,14 +181,23 @@ const FormResponseList = () => {
                     onClick={() => handleDeleteResponse(row.id)}
                     style={{ marginRight: '10px' }}
                   >
-                  Delete Response
+                    Delete Response
                   </Button>
                 </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+      <TablePagination
+        component="div"
+        count={filteredResponses.length}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
+    </Paper>
   );
 };
 

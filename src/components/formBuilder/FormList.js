@@ -40,17 +40,14 @@ const FormList = () => {
     }
   };
 
-  
   const deleteResponses = async(formId) => {
-    const responses = query(
+    const responses = await getDocs(query(
       responseCollection,
       where('formId', '==', formId)
-    );
-    await responses.map(resp => {
-      deleteDoc(doc(responseCollection, resp.id))
-    });
+    ));
+    responses.forEach(resp => deleteDoc(doc(responseCollection, resp.id)));
   }
-  
+
   const handleDeleteForm = async (formId) => {
     const isConfirmed = window.confirm("Are you sure you want to delete this form? This action cannot be undone.");
   

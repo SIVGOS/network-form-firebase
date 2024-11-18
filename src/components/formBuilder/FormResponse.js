@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 import { responseCollection } from '../../firebase';
-import { Box, FormControl, FormControlLabel, Checkbox, Radio, RadioGroup, Typography, TextField, Button,
+import { Container, Box, FormControl, FormControlLabel, Checkbox, Radio, RadioGroup, Typography, TextField, Button,
         InputLabel, Select, MenuItem } from '@mui/material';
 import { makeStyles } from '@mui/styles';
 
@@ -22,6 +22,7 @@ const FormResponse = () => {
   const location = useLocation();
   const { form, responses: initialResponses } = location.state || {};
   const [responses, setResponses] = useState(initialResponses || {});
+  const [responseLabel, setResponseLabel] = useState('');
   const user_id = localStorage.getItem('user_id');
   const user_email = localStorage.getItem('user_email');
   const classes = useStyles();
@@ -35,6 +36,9 @@ const FormResponse = () => {
         return acc;
       }, {});
       setResponses(filledResponses);
+      if(initialResponses){
+        setResponseLabel(initialResponses.responseLabel?initialResponses.responseLabel:'');
+      }
     }
   }, [form, initialResponses]);
 
@@ -47,7 +51,9 @@ const FormResponse = () => {
 
   const handleSubmit = async () => {
     const emptyRequiredFields = formFields.filter(f=>(f.required && !responses[f.label])).map(f=>f.label);
-    if(emptyRequiredFields.length>0){
+    if (!responseLabel){
+      alert('It is recommended to add a response label.')
+    } else if(emptyRequiredFields.length>0){
       alert('Required fields:' + emptyRequiredFields.join(', '));
     } else {
       const response = {
@@ -55,6 +61,7 @@ const FormResponse = () => {
         userEmail: user_email,
         formId: form.id,
         formName: form.name,
+        responseLabel: responseLabel,
         modifiedOn: serverTimestamp(),
         responses,
       };
@@ -190,6 +197,21 @@ const FormResponse = () => {
 
   return (
     <Box>
+      <h2><span>{form.name}</span></h2>
+      <Typography>Add a name of this response</Typography>
+      <TextField
+          fullWidth
+          label="Enter Response Label"
+          value={responseLabel}
+          onChange={(e) => setResponseLabel(e.target.value)}
+          InputLabelProps={{
+            required: true, shrink: true
+          }}
+          margin="normal"
+          style={{marginBottom: "20px"}}
+        />
+      <Typography>Form Field Values</Typography>
+      <Container>
       {formFields.map((field, index) => (
         <div key={index} className={classes.formControl}>
           {renderField(field)}
@@ -197,7 +219,8 @@ const FormResponse = () => {
       ))}
       <Button variant="contained" color="primary" onClick={handleSubmit} sx={{ mt: 2, ml: 2 }}>
           Save Form
-        </Button>
+      </Button>
+      </Container>
     </Box>
   );
 };
