@@ -31,12 +31,11 @@ const FormBuilder = () => {
   }, [form]);
 
   const handleAddField = () => {
-    const existigFieldNames = formFields.map(field => field.label.toLowerCase());
     if (!fieldName) {
       alert('Field name cannot be empty.');
     } else if(multiOptionFields.includes(fieldType) && newOption){
       alert(`Option "${newOption}" is not added.`)
-    } else if (existigFieldNames.includes(fieldName.toLocaleLowerCase())){
+    } else if (formFields.filter(f => (f.label.toLowerCase()===fieldName.toLowerCase())).length > 0 ){
       alert(`Field "${fieldName}" already exists.`)
     }else {
       const newField = {

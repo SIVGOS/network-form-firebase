@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, Button,
-  TextField, TableSortLabel, TablePagination} from '@mui/material';
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, Button, TextField, TableSortLabel, TablePagination, Menu, MenuItem } from '@mui/material';
 import { getDocs, query, where, orderBy, deleteDoc, addDoc, getDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { formCollection, responseCollection } from '../../firebase';
 
@@ -13,6 +12,8 @@ const FormResponseList = () => {
   const [orderByColumn, setOrderByColumn] = useState('formName');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [selectedResponse, setSelectedResponse] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -79,6 +80,26 @@ const FormResponseList = () => {
     fetchResponses();
   }
 
+  const handleDownload = async (resp) => {
+    const formDoc = await getDoc(doc(formCollection, resp.formId));
+    const formSchema = formDoc.data().schema;
+    const downloadData = {
+      formName: resp.formName,
+      responseLabel: resp.responseLabel,
+      userEmail: resp.userEmail,
+      fields: formSchema.map(field => ({ ...field, value: resp.responses[field.label] || null }))
+    };
+    const data = new Blob([JSON.stringify(downloadData, null, 4)], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(data);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${resp.responseLabel}.json`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
   };
@@ -115,6 +136,16 @@ const FormResponseList = () => {
   );
 
   const paginatedResponses = filteredResponses.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+
+  const handleMenuOpen = (event, response) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedResponse(response);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setSelectedResponse(null);
+  };
 
   return (
     <Paper>
@@ -181,29 +212,26 @@ const FormResponseList = () => {
                 <TableCell>{new Date(row.modifiedOn.toDate()).toLocaleString()}</TableCell>
                 <TableCell>
                   <Button
+                    aria-controls="action-menu"
+                    aria-haspopup="true"
+                    onClick={(event) => handleMenuOpen(event, row)}
                     variant="contained"
                     color="primary"
-                    onClick={() => handleEditResponse(row)}
-                    style={{ marginRight: '10px' }}
                   >
-                    Edit
+                    Actions
                   </Button>
-                  <Button
-                    variant="contained"
-                    color="error"
-                    onClick={() => handleDeleteResponse(row.id)}
-                    style={{ marginRight: '10px' }}
+                  <Menu
+                    id="action-menu"
+                    anchorEl={anchorEl}
+                    keepMounted
+                    open={Boolean(anchorEl)}
+                    onClose={handleMenuClose}
                   >
-                    Delete
-                  </Button>
-                  <Button
-                    variant="contained"
-                    color="secondary"
-                    onClick={() => handleCopyResponse(row)}
-                    style={{ marginRight: '10px' }}
-                  >
-                    Copy
-                  </Button>
+                    <MenuItem onClick={() => { handleEditResponse(selectedResponse); handleMenuClose(); }}>Edit</MenuItem>
+                    <MenuItem onClick={() => { handleDeleteResponse(selectedResponse.id); handleMenuClose(); }}>Delete</MenuItem>
+                    <MenuItem onClick={() => { handleCopyResponse(selectedResponse); handleMenuClose(); }}>Copy</MenuItem>
+                    <MenuItem onClick={() => { handleDownload(selectedResponse); handleMenuClose(); }}>Download</MenuItem>
+                  </Menu>
                 </TableCell>
               </TableRow>
             ))}
