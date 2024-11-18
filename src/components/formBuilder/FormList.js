@@ -108,7 +108,7 @@ const FormList = () => {
                   onClick={() => handleSelectForm(form, 'edit')}
                   style={{ marginRight: '10px' }}
                 >
-                  Edit Form
+                  Edit
                 </Button>
                 <Button
                   variant="contained"
@@ -116,14 +116,14 @@ const FormList = () => {
                   onClick={() => handleSelectForm(form, 'fill')}
                   style={{ marginRight: '10px' }}
                 >
-                  Fill Form
+                  Fill
                 </Button>
                 <Button
                   variant="contained"
                   color="error"
                   onClick={() => handleDeleteForm(form.id)}
                 >
-                  Delete Form
+                  Delete
                 </Button>
               </Box>
             </Box>

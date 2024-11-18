@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, Button,
+import {Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, Button,
   TextField, TableSortLabel, TablePagination} from '@mui/material';
-import { getDocs, query, where, orderBy, deleteDoc, getDoc, doc } from 'firebase/firestore';
+import { getDocs, query, where, orderBy, deleteDoc, addDoc, getDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { formCollection, responseCollection } from '../../firebase';
 
 const FormResponseList = () => {
@@ -65,6 +64,20 @@ const FormResponseList = () => {
       console.log("Response deletion canceled.");
     }
   };
+
+  const handleCopyResponse = async (resp) => {
+    const response = {
+      userId: user_id,
+      userEmail: resp.userEmail,
+      formId: resp.formId,
+      formName: resp.formName,
+      responseLabel: `Copy of ${resp.responseLabel}`,
+      modifiedOn: serverTimestamp(),
+      responses: resp.responses,
+    };
+    await addDoc(responseCollection, response);
+    fetchResponses();
+  }
 
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
@@ -173,7 +186,7 @@ const FormResponseList = () => {
                     onClick={() => handleEditResponse(row)}
                     style={{ marginRight: '10px' }}
                   >
-                    Edit Response
+                    Edit
                   </Button>
                   <Button
                     variant="contained"
@@ -181,7 +194,15 @@ const FormResponseList = () => {
                     onClick={() => handleDeleteResponse(row.id)}
                     style={{ marginRight: '10px' }}
                   >
-                    Delete Response
+                    Delete
+                  </Button>
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    onClick={() => handleCopyResponse(row)}
+                    style={{ marginRight: '10px' }}
+                  >
+                    Copy
                   </Button>
                 </TableCell>
               </TableRow>

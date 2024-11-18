@@ -27,7 +27,7 @@ const FormResponse = () => {
   const user_email = localStorage.getItem('user_email');
   const classes = useStyles();
   const navigate = useNavigate()
-  const formFields = JSON.parse(form.schema);
+  const formFields = form.schema;
 
   useEffect(() => {
     if (form) {

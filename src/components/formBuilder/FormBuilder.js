@@ -12,7 +12,7 @@ const FormBuilder = () => {
   const navigate = useNavigate();
   const { form } = location.state || {};
   const [formName, setFormName] = useState(form?.name || '');
-  const [formFields, setFormFields] = useState(form ? JSON.parse(form.schema) : []);
+  const [formFields, setFormFields] = useState(form ? form.schema : []);
   const [fieldName, setFieldName] = useState('');
   const [fieldType, setFieldType] = useState('text');
   const [requiredField, setRequiredField] = useState(true);
@@ -26,22 +26,24 @@ const FormBuilder = () => {
   useEffect(() => {
     if (form) {
       setFormName(form.name);
-      setFormFields(JSON.parse(form.schema));
+      setFormFields(form.schema);
     }
   }, [form]);
 
   const handleAddField = () => {
-    console.log('In handle add field:', fieldName);
+    const existigFieldNames = formFields.map(field => field.label.toLowerCase());
     if (!fieldName) {
       alert('Field name cannot be empty.');
     } else if(multiOptionFields.includes(fieldType) && newOption){
-      alert(`Option ${newOption} is not added.`)
-    } else {
+      alert(`Option "${newOption}" is not added.`)
+    } else if (existigFieldNames.includes(fieldName.toLocaleLowerCase())){
+      alert(`Field "${fieldName}" already exists.`)
+    }else {
       const newField = {
         type: fieldType,
         label: fieldName,
         required: requiredField,
-        options: multiOptionFields.includes(fieldType) ? options : undefined
+        options: multiOptionFields.includes(fieldType) ? options : null
       };
       setFormFields((prevFields) => [...prevFields, newField]);
       setFieldName('');
@@ -65,7 +67,7 @@ const FormBuilder = () => {
     } else {
       const formData = {
         name: formName,
-        schema: JSON.stringify(formFields),
+        schema: formFields,
         user_id: user_id,
         modifiedAt: serverTimestamp()
       };
