@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Button, Container, List, ListItem, ListItemText, Typography, TextField } from '@mui/material';
+import { Box, Button, Container, List, ListItem, ListItemText, Typography, TextField,  Menu, MenuItem } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getDocs, deleteDoc, doc, query, where } from 'firebase/firestore';
+import { getDocs, deleteDoc, doc, query, where, addDoc, serverTimestamp } from 'firebase/firestore';
 import { formCollection, responseCollection } from '../../firebase';
 
 const FormList = () => {
   const [forms, setForms] = useState([]);
   const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
+  const [anchorEl, setAnchorEl] = useState(null);
   const navigate = useNavigate();
   const user_id = localStorage.getItem('user_id');
   
@@ -65,8 +66,43 @@ const FormList = () => {
     }
   };
 
+  const handleCopyForm = async (form) => {
+    const formData = {
+      name: `Copy of ${form.name}`,
+      schema: form.schema,
+      user_id: user_id,
+      modifiedAt: serverTimestamp()
+    };
+    await addDoc(formCollection, formData);
+    fetchForms();
+  }
+
+  const handleDownloadForm = async(form) => {
+    const downloadData = {
+      name: form.name,
+      createdBy: localStorage.getItem('user_email'),
+      schema: form.schema
+    };
+    const data = new Blob([JSON.stringify(downloadData, null, 4)], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(data);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${form.name}.json`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+  }
+
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
+  };
+
+  const handleMenuOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
   };
 
   const filteredForms = forms.filter(form => form.name.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -103,28 +139,27 @@ const FormList = () => {
               />
               <Box>
                 <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={() => handleSelectForm(form, 'edit')}
-                  style={{ marginRight: '10px' }}
-                >
-                  Edit
-                </Button>
-                <Button
-                  variant="contained"
-                  color="secondary"
-                  onClick={() => handleSelectForm(form, 'fill')}
-                  style={{ marginRight: '10px' }}
-                >
-                  Fill
-                </Button>
-                <Button
-                  variant="contained"
-                  color="error"
-                  onClick={() => handleDeleteForm(form.id)}
-                >
-                  Delete
-                </Button>
+                    aria-controls="action-menu"
+                    aria-haspopup="true"
+                    onClick={(event) => handleMenuOpen(event)}
+                    variant="contained"
+                    color="primary"
+                  >
+                    Actions
+                  </Button>
+                  <Menu
+                    id="action-menu"
+                    anchorEl={anchorEl}
+                    keepMounted
+                    open={Boolean(anchorEl)}
+                    onClose={handleMenuClose}
+                  >
+                    <MenuItem onClick={() => { handleSelectForm(form, 'edit') ; handleMenuClose(); }}>Edit From</MenuItem>
+                    <MenuItem onClick={() => { handleSelectForm(form, 'fill'); handleMenuClose(); }}>Fill Form</MenuItem>
+                    <MenuItem onClick={() => { handleDeleteForm(form.id); handleMenuClose(); }}>Delete Form</MenuItem>
+                    <MenuItem onClick={() => { handleCopyForm(form); handleMenuClose(); }}>Copy Form</MenuItem>
+                    <MenuItem onClick={() => { handleDownloadForm(form); handleMenuClose(); }}>Download Form</MenuItem>
+                  </Menu>
               </Box>
             </Box>
           </ListItem>
